@@ -44,6 +44,15 @@ ort = { version = "=2.0.0-rc.10", default-features = false, features = ["coreml"
 tempfile = "3.8"
 paste = "1.0"
 
+# Stress testing dependencies
+httpmock = "0.7.0"              # HTTP mocking with deterministic failure injection
+hyper = "0.14"                  # Small helper for TCP-level fault injection (~50 LOC)
+tokio = { version = "1.0", features = ["rt", "net"] }  # Only for hyper helper
+serde_json = "1.0"              # For test result serialization
+fail = "0.5"                    # Failpoints for crash testing (test-only)
+fd-lock = "4.0"                 # Cross-process lock validation
+sha2 = "0.10"                   # SHA-256 checksums for test fixtures
+
 [build-dependencies]
 ureq        = { version = "2.12", features = ["json"] }
 serde_json  = "1.0"

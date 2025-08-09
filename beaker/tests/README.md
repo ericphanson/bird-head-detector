@@ -1,6 +1,6 @@
 # Beaker Test Framework
 
-End-to-end integration tests for the beaker CLI focusing on metadata validation and performance tracking. These tests exercise the complete CLI tool to verify it "really works" while remaining independent of implementation details.
+End-to-end integration tests for the beaker CLI focusing on metadata validation, performance tracking, and stress testing. These tests exercise the complete CLI tool to verify it "really works" while remaining independent of implementation details.
 
 ## Goals
 
@@ -8,19 +8,33 @@ End-to-end integration tests for the beaker CLI focusing on metadata validation 
 - Track performance characteristics to identify regressions
 - Ensure consistent behavior across head detection and cutout operations
 - Provide parallel test execution for faster feedback
+- **[NEW]** Stress test caching mechanisms under concurrent access and network failures
 
 ## Test Architecture
 
-The test framework is split across three files for clarity and maintainability:
+The test framework is split across multiple components for clarity and maintainability:
 
-### `metadata_based_tests.rs` - Test Scenarios
+### Core Integration Tests
+
+#### `metadata_based_tests.rs` - Test Scenarios
 Contains the actual test definitions in `get_test_scenarios()` and the macro call to generate tests. Start here when adding new test cases or understanding what scenarios are covered.
 
-### `metadata_test_framework.rs` - Framework Code
+#### `metadata_test_framework.rs` - Framework Code
 Houses the testing infrastructure: validation logic, metadata parsing, command execution, and test generation macro. Edit this when adding new validation types or framework features.
 
-### `test_performance_tracker.rs` - Performance Monitoring
+#### `test_performance_tracker.rs` - Performance Monitoring
 Handles timing collection and reporting. Modify this to adjust performance thresholds or add new metrics.
+
+### Stress Testing Framework
+
+#### `PARALLEL_STRESS_TEST_PLAN.md` - Stress Test Plan
+**Comprehensive plan for parallel process stress testing** focusing on:
+- ONNX and CoreML cache robustness under concurrent access
+- Network failure simulation and recovery testing
+- Lock contention and race condition detection
+- Cache consistency validation across multiple processes
+
+See the plan for detailed framework architecture, implementation strategy, and test scenarios for validating cache mechanisms under realistic concurrent usage patterns.
 
 ### Metadata-Based Testing
 Tests use scenario definitions with expected metadata validation checks. Each scenario exercises specific combinations of tools, devices, and configurations while verifying the generated `.beaker.toml` metadata.
