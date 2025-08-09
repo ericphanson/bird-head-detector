@@ -61,5 +61,5 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 
-[tool.uv.sources]
-ultralytics = { git = "https://github.com/ericphanson/yolov12" }
+# [tool.uv.sources]
+# ultralytics = { git = "https://github.com/ericphanson/yolov12" }

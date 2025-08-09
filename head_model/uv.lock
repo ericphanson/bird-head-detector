@@ -391,7 +391,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", specifier = ">=0.7.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
-    { name = "ultralytics", git = "https://github.com/ericphanson/yolov12" },
+    { name = "ultralytics" },
 ]
 
 [[package]]
@@ -1790,7 +1790,7 @@ wheels = [
 [[package]]
 name = "ultralytics"
 version = "8.3.63"
-source = { git = "https://github.com/ericphanson/yolov12#1308d3e27e7813ee47dca0c7689a71c3ef505e51" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
@@ -1808,6 +1808,10 @@ dependencies = [
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "ultralytics-thop" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/67/06/fbee76c2507bdd531ae50d48869bb8421162f7ebf9541d246980089a9668/ultralytics-8.3.63.tar.gz", hash = "sha256:c34604d52848a7dda6841f7cf52a2d2d8ca828c54ae409c45bb2337d05aba96c", size = 785974, upload-time = "2025-01-17T11:50:24.749Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/0c/f6ef479f001493ffa935d50817e0dcd848a3c3f3f0813d943b85454e8a3f/ultralytics-8.3.63-py3-none-any.whl", hash = "sha256:713aaa7a01732b2903d4a701e92843e7bf6d91bfd50d7f6cfb9ed52b605fc0f3", size = 910223, upload-time = "2025-01-17T11:50:20.625Z" },
 ]
 
 [[package]]
