@@ -108,6 +108,10 @@ pub struct GlobalArgs {
     #[arg(long, global = true)]
     pub metadata: bool,
 
+    /// Write Make-compatible dependency file listing all inputs and outputs
+    #[arg(long, global = true)]
+    pub depfile: Option<String>,
+
     /// Verbosity level (-q/--quiet, -v/-vv/-vvv/-vvvv for info/debug/trace)
     #[command(flatten)]
     pub verbosity: Verbosity,
@@ -135,6 +139,9 @@ pub struct BaseModelConfig {
     /// Optional output directory override
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output_dir: Option<String>,
+    /// Optional depfile path for Make-compatible dependency tracking
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depfile: Option<String>,
     /// Whether to skip metadata generation
     pub skip_metadata: bool,
     /// Use strict mode (fail if files are not found or are unsupported). Opposite of `--permissive`.
@@ -278,6 +285,7 @@ impl From<GlobalArgs> for BaseModelConfig {
             sources: Vec::new(), // Sources come from command, not global args
             device: global.device,
             output_dir: global.output_dir,
+            depfile: global.depfile,
             skip_metadata: !global.metadata, // Note: CLI uses metadata flag, internal uses skip_metadata
             strict: !global.permissive,      // Note: CLI uses permissive, internal uses strict
         }
@@ -337,11 +345,19 @@ impl ModelConfig for DetectionConfig {
     fn base(&self) -> &BaseModelConfig {
         &self.base
     }
+
+    fn tool_name(&self) -> &'static str {
+        "detect"
+    }
 }
 
 impl ModelConfig for CutoutConfig {
     fn base(&self) -> &BaseModelConfig {
         &self.base
+    }
+
+    fn tool_name(&self) -> &'static str {
+        "cutout"
     }
 }
 
@@ -355,6 +371,7 @@ mod tests {
             device: "cpu".to_string(),
             output_dir: Some("/tmp".to_string()),
             metadata: false,
+            depfile: Some("/tmp/test.d".to_string()),
             verbosity: Verbosity::new(2, 0), // -vv level (info level enables verbose)
             permissive: true,
             no_color: false,
@@ -365,6 +382,7 @@ mod tests {
         assert_eq!(config.sources, Vec::<String>::new()); // Sources come from command
         assert_eq!(config.device, "cpu");
         assert_eq!(config.output_dir, Some("/tmp".to_string()));
+        assert_eq!(config.depfile, Some("/tmp/test.d".to_string()));
         assert!(config.skip_metadata); // metadata=false -> skip_metadata=true
                                        // Note: verbosity is now handled directly by the logging system via env_logger
         assert!(!config.strict); // permissive=true -> strict=false
@@ -376,6 +394,7 @@ mod tests {
             device: "auto".to_string(),
             output_dir: None,
             metadata: false,
+            depfile: None,
             verbosity: Verbosity::new(0, 0), // Default level (warnings and errors only)
             permissive: false,
             no_color: false,
@@ -416,6 +435,7 @@ mod tests {
             device: "coreml".to_string(),
             output_dir: Some("/output".to_string()),
             metadata: false,
+            depfile: None,
             verbosity: Verbosity::new(1, 0), // -v level (info)
             permissive: false,
             no_color: false,
@@ -455,6 +475,7 @@ mod tests {
                 sources: vec!["test.jpg".to_string()],
                 device: "cpu".to_string(),
                 output_dir: Some("/tmp".to_string()),
+                depfile: None,
                 skip_metadata: true,
                 strict: true,
             },

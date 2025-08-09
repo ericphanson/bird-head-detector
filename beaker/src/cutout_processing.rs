@@ -14,7 +14,7 @@ use log::debug;
 use ort::{session::Session, value::Value};
 use serde::Serialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 /// ISNet General Use default model information
@@ -67,6 +67,9 @@ pub struct CutoutResult {
     // Store raw mask data for metadata encoding
     #[serde(skip)]
     pub raw_mask_data: Option<(Vec<u8>, u32, u32)>, // (mask_data, width, height)
+    /// List of output files actually created (for depfile generation)
+    #[serde(skip)]
+    pub created_files: Vec<PathBuf>,
 }
 
 /// Extract binary mask data from a GrayImage by thresholding at 128
@@ -133,6 +136,10 @@ impl ModelResult for CutoutResult {
         } else {
             None
         }
+    }
+
+    fn get_created_files(&self) -> Vec<std::path::PathBuf> {
+        self.created_files.clone()
     }
 }
 
@@ -205,6 +212,9 @@ impl ModelProcessor for CutoutProcessor {
             None
         };
 
+        // Track created files
+        let mut created_files = Vec::new();
+
         // Create the cutout
         let cutout_result = if config.alpha_matting {
             apply_alpha_matting(
@@ -225,6 +235,11 @@ impl ModelProcessor for CutoutProcessor {
             fs::create_dir_all(parent)?;
         }
         io_timing.time_save_operation(|| Ok(cutout_result.save(&output_path)?))?;
+
+        // Track the main output as produced
+        output_manager.track_output(output_path.clone());
+        created_files.push(output_path.clone());
+
         debug!(
             "{} Cutout saved to: {}",
             symbols::completed_successfully(),
@@ -236,6 +251,11 @@ impl ModelProcessor for CutoutProcessor {
                 fs::create_dir_all(parent)?;
             }
             io_timing.time_save_operation(|| Ok(mask.save(mask_path_val)?))?;
+
+            // Track the mask output as produced
+            output_manager.track_output(mask_path_val.clone());
+            created_files.push(mask_path_val.clone());
+
             debug!(
                 "{} Mask saved to: {}",
                 symbols::completed_successfully(),
@@ -253,6 +273,7 @@ impl ModelProcessor for CutoutProcessor {
             mask_path: mask_path.map(|p| p.to_string_lossy().to_string()),
             io_timing,
             raw_mask_data: Some(raw_mask_data),
+            created_files,
         };
 
         Ok(cutout_result)

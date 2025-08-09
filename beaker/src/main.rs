@@ -10,6 +10,7 @@ mod config;
 mod cutout_postprocessing;
 mod cutout_preprocessing;
 mod cutout_processing;
+mod depfile_generator;
 mod detection;
 mod image_input;
 mod mask_encoding;
@@ -19,6 +20,7 @@ mod onnx_session;
 mod output_manager;
 mod progress;
 mod shared_metadata;
+mod stamp_manager;
 mod yolo_postprocessing;
 mod yolo_preprocessing;
 

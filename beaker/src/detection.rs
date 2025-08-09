@@ -3,7 +3,7 @@ use image::{DynamicImage, GenericImageView};
 use ndarray::Array;
 use ort::{session::Session, value::Value};
 use serde::Serialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use crate::color_utils::symbols;
@@ -59,6 +59,9 @@ pub struct DetectionResult {
     pub detections: Vec<DetectionWithPath>,
     #[serde(skip_serializing)]
     pub io_timing: IoTiming,
+    /// List of output files actually created (for depfile generation)
+    #[serde(skip)]
+    pub created_files: Vec<PathBuf>,
 }
 
 #[derive(Serialize, Clone)]
@@ -115,6 +118,10 @@ impl ModelResult for DetectionResult {
     fn get_io_timing(&self) -> crate::shared_metadata::IoTiming {
         self.io_timing.clone()
     }
+
+    fn get_created_files(&self) -> Vec<std::path::PathBuf> {
+        self.created_files.clone()
+    }
 }
 
 /// Get the appropriate output extension based on input file
@@ -139,12 +146,13 @@ fn handle_image_outputs_with_timing(
     image_path: &Path,
     config: &DetectionConfig,
     io_timing: &mut IoTiming,
-) -> Result<(Option<String>, Vec<DetectionWithPath>)> {
+) -> Result<(Option<String>, Vec<DetectionWithPath>, Vec<PathBuf>)> {
     let source_path = image_path;
     let output_ext = get_output_extension(source_path);
     let output_manager = OutputManager::new(config, source_path);
 
     let mut detections_with_paths = Vec::new();
+    let mut created_files = Vec::new();
 
     // Create crops if requested
     if !config.crop_classes.is_empty() && !detections.is_empty() {
@@ -169,6 +177,10 @@ fn handle_image_outputs_with_timing(
             // Time the crop creation and save
             io_timing
                 .time_save_operation(|| create_square_crop(img, detection, &crop_filename, 0.1))?;
+
+            // Track this output as produced
+            output_manager.track_output(crop_filename.clone());
+            created_files.push(crop_filename.clone());
 
             debug!(
                 "{} Crop saved to: {}",
@@ -203,6 +215,10 @@ fn handle_image_outputs_with_timing(
         io_timing
             .time_save_operation(|| save_bounding_box_image(img, detections, &bbox_filename))?;
 
+        // Track this output as produced
+        output_manager.track_output(bbox_filename.clone());
+        created_files.push(bbox_filename.clone());
+
         debug!(
             "{} Bounding box image saved to: {}",
             symbols::completed_successfully(),
@@ -213,7 +229,7 @@ fn handle_image_outputs_with_timing(
         bounding_box_path = Some(output_manager.make_relative_to_metadata(&bbox_filename)?);
     }
 
-    Ok((bounding_box_path, detections_with_paths))
+    Ok((bounding_box_path, detections_with_paths, created_files))
 }
 
 /// Detection processor implementing the generic ModelProcessor trait
@@ -294,13 +310,14 @@ impl ModelProcessor for DetectionProcessor {
         let total_processing_time = processing_start.elapsed().as_secs_f64() * 1000.0;
 
         // Handle outputs for this specific image (includes file I/O)
-        let (bounding_box_path, detections_with_paths) = handle_image_outputs_with_timing(
-            &img,
-            &detections,
-            image_path,
-            config,
-            &mut io_timing,
-        )?;
+        let (bounding_box_path, detections_with_paths, created_files) =
+            handle_image_outputs_with_timing(
+                &img,
+                &detections,
+                image_path,
+                config,
+                &mut io_timing,
+            )?;
 
         Ok(DetectionResult {
             model_version: MODEL_VERSION.to_string(),
@@ -308,6 +325,7 @@ impl ModelProcessor for DetectionProcessor {
             bounding_box_path,
             detections: detections_with_paths,
             io_timing,
+            created_files,
         })
     }
 
